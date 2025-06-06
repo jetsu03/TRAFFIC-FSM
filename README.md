@@ -39,7 +39,7 @@ This is a fully interactive Traffic Signal Controller built using HTML, CSS, and
     * `.log-container`
     * `.light.active/off`
 
-  # Instructions to Use the Website (How-To)
+# Instructions to Use the Website (How-To)
 
 * **Basic Light Controls**
 
@@ -70,8 +70,6 @@ This is a fully interactive Traffic Signal Controller built using HTML, CSS, and
 * **Keyboard Shortcuts**
 
   * Use keys `G`, `Y`, `R`, and `E` to simulate commands directly without clicking.
-
----
 
 # FSM Logic Summary
 
