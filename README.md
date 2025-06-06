@@ -77,3 +77,5 @@ This is a fully interactive Traffic Signal Controller built using HTML, CSS, and
 * Each command triggers a state transition.
 * The FSM queues and executes commands one at a time (unless emergency overrides).
 * Emergency (`e`) clears queue and halts normal processing.
+
+![image alt](https://github.com/jetsu03/TRAFFIC-FSM/blob/d6f8b8c06d15b2cd1e6695c8f24d205dd339f2f2/State_diagram.jpg)
