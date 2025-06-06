@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Signal Control FSM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .traffic-light {
+            background: #2c3e50;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .light-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .light {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid #34495e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .light::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .light.red { background: #e74c3c; color: white; }
+        .light.yellow { background: #f39c12; color: white; }
+        .light.green { background: #27ae60; color: white; }
+        .light.pedestrian { background: #3498db; color: white; }
+        .light.emergency { background: #9b59b6; color: white; }
+        .light.off { background: #7f8c8d; color: #bdc3c7; }
+
+        .light.active {
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.8), 0 0 60px currentColor;
+            transform: scale(1.1);
+        }
+
+        .controls {
+            background: #ecf0f1;
+            border-radius: 15px;
+            padding: 25px;
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+        }
+
+        .control-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-green { background: #27ae60; color: white; }
+        .btn-yellow { background: #f39c12; color: white; }
+        .btn-red { background: #e74c3c; color: white; }
+        .btn-emergency { background: #9b59b6; color: white; }
+        .btn-reset { background: #34495e; color: white; }
+
+        .pedestrian-input {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        input[type="number"] {
+            padding: 10px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            font-size: 16px;
+            width: 80px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            font-size: 16px;
+            flex: 1;
+        }
+
+        .status-panel {
+            grid-column: 1 / -1;
+            background: #34495e;
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .status-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .status-item h4 {
+            color: #3498db;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .queue-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin: 5px 0;
+            display: inline-block;
+            margin-right: 5px;
+        }
+
+        .log-container {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .error {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚦 Traffic Signal Control FSM</h1>
+        
+        <div class="main-grid">
+            <div class="traffic-light">
+                <div class="light-container">
+                    <div class="light red off" id="redLight">RED</div>
+                    <div class="light yellow off" id="yellowLight">YELLOW</div>
+                    <div class="light green off" id="greenLight">GREEN</div>
+                    <div class="light pedestrian off" id="pedestrianLight">WALK</div>
+                    <div class="light emergency off" id="emergencyLight">EMERGENCY</div>
+                </div>
+                <div style="color: white; font-size: 1.2em; font-weight: bold;">
+                    Current State: <span id="currentState">IDLE</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="control-section">
+                    <h3>🚥 Traffic Controls</h3>
+                    <div class="button-grid">
+                        <button class="btn-green" onclick="sendCommand('g')">Green (G)</button>
+                        <button class="btn-yellow" onclick="sendCommand('y')">Yellow (Y)</button>
+                        <button class="btn-red" onclick="sendCommand('r')">Red (R)</button>
+                        <button class="btn-emergency" onclick="sendCommand('e')">Emergency (E)</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>🚶 Pedestrian Request</h3>
+                    <div class="pedestrian-input">
+                        <input type="number" id="pedCrossing" min="1" max="99" placeholder="1-99">
+                        <button class="btn-green" onclick="sendPedestrianRequest()">Request Crossing</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>📝 Custom Command</h3>
+                    <div class="pedestrian-input">
+                        <input type="text" id="customCommand" placeholder="e.g., g y r p5 e">
+                        <button class="btn-green" onclick="sendCustomCommand()">Send Sequence</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <button class="btn-reset" onclick="resetSystem()">🔄 Reset System</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-panel">
+            <div class="status-grid">
+                <div class="status-item">
+                    <h4>📋 Request Queue</h4>
+                    <div id="queueDisplay">Empty</div>
+                </div>
+                <div class="status-item">
+                    <h4>✅ Valid Commands</h4>
+                    <div>g (green), y (yellow), r (red), p1-p99 (pedestrian), e (emergency)</div>
+                </div>
+                <div class="status-item">
+                    <h4>📊 System Log</h4>
+                    <div class="log-container" id="logContainer">
+                        <div class="log-entry">System initialized - Ready for commands</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TrafficSignalFSM {
+            constructor() {
+                this.currentState = 'IDLE';
+                this.requestQueue = [];
+                this.validInputRegex = /^(g|y|r|p([1-9]|[1-9][0-9])|e)$/;
+                this.sequenceRegex = /^(g|y|r|p([1-9]|[1-9][0-9])|e)*$/;
+                this.isProcessing = false;
+                this.emergencyActive = false;
+                this.updateDisplay();
+            }
+
+            validateInput(input) {
+                return this.validInputRegex.test(input.trim());
+            }
+
+            validateSequence(sequence) {
+                return this.sequenceRegex.test(sequence.replace(/\s+/g, ''));
+            }
+
+            log(message, type = 'info') {
+                const logContainer = document.getElementById('logContainer');
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry ${type}`;
+                logEntry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+
+            addToQueue(command) {
+                // Avoid duplicate consecutive commands
+                if (this.requestQueue.length === 0 || this.requestQueue[this.requestQueue.length - 1] !== command) {
+                    this.requestQueue.push(command);
+                    this.log(`Added "${command}" to queue`, 'success');
+                } else {
+                    this.log(`Duplicate command "${command}" ignored`, 'info');
+                }
+                this.updateDisplay();
+            }
+
+            processCommand(command) {
+                if (!this.validateInput(command)) {
+                    this.log(`Invalid command: "${command}"`, 'error');
+                    return false;
+                }
+
+                // If emergency is active, only allow reset
+                if (this.emergencyActive && command !== 'reset') {
+                    this.log('Emergency active - only reset allowed', 'error');
+                    return false;
+                }
+
+                // Add all commands to queue (including emergency)
+                this.addToQueue(command);
+                this.processQueue();
+                return true;
+            }
+
+            processQueue() {
+                if (this.isProcessing || this.requestQueue.length === 0 || this.emergencyActive) {
+                    return;
+                }
+
+                this.isProcessing = true;
+                const command = this.requestQueue.shift();
+                this.executeCommand(command);
+                this.updateDisplay();
+
+                // Continue processing queue after a delay
+                setTimeout(() => {
+                    this.isProcessing = false;
+                    this.processQueue();
+                }, 2000);
+            }
+
+            executeCommand(command) {
+                const previousState = this.currentState;
+                
+                // Handle emergency command
+                if (command === 'e') {
+                    this.handleEmergency();
+                    return;
+                }
+                
+                switch (command) {
+                    case 'g':
+                        this.currentState = 'GREEN_LIGHT';
+                        this.activateLight('green');
+                        this.log(`State: ${previousState} → GREEN_LIGHT`, 'success');
+                        break;
+                    case 'y':
+                        this.currentState = 'YELLOW_LIGHT';
+                        this.activateLight('yellow');
+                        this.log(`State: ${previousState} → YELLOW_LIGHT`, 'success');
+                        break;
+                    case 'r':
+                        this.currentState = 'RED_LIGHT';
+                        this.activateLight('red');
+                        this.log(`State: ${previousState} → RED_LIGHT`, 'success');
+                        break;
+                    default:
+                        if (command.startsWith('p')) {
+                            const crossingNum = command.substring(1);
+                            this.currentState = 'PEDESTRIAN_GREEN';
+                            this.activateLight('pedestrian');
+                            this.log(`State: ${previousState} → PEDESTRIAN_GREEN (Crossing ${crossingNum})`, 'success');
+                        }
+                        break;
+                }
+            }
+
+            handleEmergency() {
+                this.emergencyActive = true;
+                this.currentState = 'EMERGENCY_RESPONSE';
+                this.requestQueue = []; // Clear all remaining pending requests
+                this.activateLight('emergency');
+                this.log('EMERGENCY ACTIVATED - All remaining commands cleared', 'error');
+                this.updateDisplay();
+            }
+
+            activateLight(lightType) {
+                // Turn off all lights
+                const lights = ['red', 'yellow', 'green', 'pedestrian', 'emergency'];
+                lights.forEach(light => {
+                    const element = document.getElementById(`${light}Light`);
+                    element.classList.remove('active');
+                    element.classList.add('off');
+                });
+
+                // Activate the specified light
+                const activeLight = document.getElementById(`${lightType}Light`);
+                activeLight.classList.remove('off');
+                activeLight.classList.add('active');
+            }
+
+            reset() {
+                this.currentState = 'IDLE';
+                this.requestQueue = [];
+                this.isProcessing = false;
+                this.emergencyActive = false;
+                
+                // Turn off all lights
+                const lights = ['red', 'yellow', 'green', 'pedestrian', 'emergency'];
+                lights.forEach(light => {
+                    const element = document.getElementById(`${light}Light`);
+                    element.classList.remove('active');
+                    element.classList.add('off');
+                });
+
+                this.log('System reset - All states cleared', 'success');
+                this.updateDisplay();
+            }
+
+            updateDisplay() {
+                document.getElementById('currentState').textContent = this.currentState;
+                
+                const queueDisplay = document.getElementById('queueDisplay');
+                if (this.requestQueue.length === 0) {
+                    queueDisplay.innerHTML = 'Empty';
+                } else {
+                    queueDisplay.innerHTML = this.requestQueue
+                        .map(cmd => `<span class="queue-item">${cmd}</span>`)
+                        .join('');
+                }
+            }
+        }
+
+        // Initialize the FSM
+        const trafficFSM = new TrafficSignalFSM();
+
+        function sendCommand(command) {
+            trafficFSM.processCommand(command);
+        }
+
+        function sendPedestrianRequest() {
+            const crossing = document.getElementById('pedCrossing').value;
+            if (crossing >= 1 && crossing <= 99) {
+                trafficFSM.processCommand(`p${crossing}`);
+                document.getElementById('pedCrossing').value = '';
+            } else {
+                trafficFSM.log('Invalid pedestrian crossing number (1-99)', 'error');
+            }
+        }
+
+        function sendCustomCommand() {
+            const command = document.getElementById('customCommand').value.trim();
+            if (!command) return;
+
+            const cleanCommand = command.replace(/\s+/g, '');
+            if (!trafficFSM.validateSequence(cleanCommand)) {
+                trafficFSM.log(`Invalid command sequence: "${command}"`, 'error');
+                return;
+            }
+
+            // Process each character/command in the sequence
+            const commands = [];
+            let i = 0;
+            while (i < cleanCommand.length) {
+                if (cleanCommand[i] === 'p') {
+                    // Handle pedestrian command
+                    let pedNum = '';
+                    i++; // Skip 'p'
+                    while (i < cleanCommand.length && /\d/.test(cleanCommand[i])) {
+                        pedNum += cleanCommand[i];
+                        i++;
+                    }
+                    if (pedNum && parseInt(pedNum) >= 1 && parseInt(pedNum) <= 99) {
+                        commands.push(`p${pedNum}`);
+                    }
+                } else if (['g', 'y', 'r', 'e'].includes(cleanCommand[i])) {
+                    commands.push(cleanCommand[i]);
+                    i++;
+                } else {
+                    i++;
+                }
+            }
+
+            // Process each command
+            commands.forEach(cmd => trafficFSM.processCommand(cmd));
+            document.getElementById('customCommand').value = '';
+        }
+
+        function resetSystem() {
+            trafficFSM.reset();
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            if (event.target.tagName === 'INPUT') return;
+            
+            switch(event.key.toLowerCase()) {
+                case 'g':
+                    sendCommand('g');
+                    break;
+                case 'y':
+                    sendCommand('y');
+                    break;
+                case 'r':
+                    sendCommand('r');
+                    break;
+                case 'e':
+                    sendCommand('e');
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>
